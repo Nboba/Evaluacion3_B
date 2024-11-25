@@ -37,18 +37,29 @@ def calcular_metricas(matriz_confusion):
     return precision, recall, f1_score, accuracy
 
 def main():
+        #Carga e Inicializacion de datos
         pathTest='test'	
         X,y=ut.loadData(pathTest)
         pesos=np.load("Pesos.npz")
         W1,W2,W3=pesos['W1'],pesos['W2'],pesos['W3']
         y_pred=forward_edl(X, W1, W2, W3)
+
+        #Matriz de Confusion
         matriz_confusion = matriz_confusion_manual(y, y_pred, 2)
         print("Matriz de confusión:",matriz_confusion)
+        
+        #Metricas
         precision, recall, f1_score, accuracy = calcular_metricas(matriz_confusion)
         print("precision:",precision)
         print("recall:",recall)
         print("f1_score:",f1_score)
         print("accuracy:",accuracy)
+
+        #Guardar archivos
+        np.savetxt("confusion.csv", matriz_confusion, delimiter=",", fmt="%d", comments="")
+        with open("fscores.csv", "w") as file:
+            file.write(f"Metric,Value\nprecision,{precision}\nrecall,{recall}\nf1_score,{f1_score}\naccuracy,{accuracy}\n")
+        
               
 
 if __name__ == '__main__':   

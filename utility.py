@@ -1,17 +1,18 @@
 
 # My Utility : auxiliars functions
-
-#import pandas as pd
 import numpy  as np
-import pprint as pp
 
+# Cargar datos encoder
 def loadConfSae():
     conf=np.loadtxt('config_sae.csv').astype(int)
     return conf
 
+# Cargar datos softmax
 def loadConfSoft():
     conf=np.loadtxt('config_softmax.csv')
     return conf
+
+# Cargar datos set
 def loadData(path):
     data=np.loadtxt(f'd{path}.csv', delimiter=',')
     idx_igain=np.loadtxt('idx_igain.csv').astype(int)-1
@@ -23,16 +24,20 @@ def loadData(path):
     np.savetxt(f'Data{path.capitalize()}.csv',X,delimiter=',')
     return X,y
 
+# Funcion para obtener w inicial
 def getWInicial(d,L):
     r=np.sqrt(6/(d+L))
     return np.random.uniform(-r, r, size=(L, d))
 
+# Funcion para calcular el ecm
 def calcular_ecm(real, predicho):
     return np.mean((real - predicho) ** 2)
 
+# Funcion Sigmoidal
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
+# Funcion Normalizacion
 def normData(X):
     epsilon = 1e-10
     muX = np.mean(X, axis=0)
@@ -51,6 +56,7 @@ def calcular_pseudo_inversa(X, H, C):
     A = H @ H.T + (I / C)  # Regularización
     return np.linalg.inv(A) @ H @ X.T
 
+# Funcion SAE ELM
 def sae_elm(X, Y, conf):
     capa_oculta_1 = conf[0]  # Número de nodos capa oculta 1
     capa_oculta_2 = conf[1]  # Número de nodos capa oculta 2
@@ -85,7 +91,7 @@ def sae_elm(X, Y, conf):
 
     return W1,mejor_W2,W3
 
-
+# Funcion Softmax
 def softmax(z):
     exp_z = np.exp(z - np.max(z, axis=1, keepdims=True))
     return exp_z / np.sum(exp_z, axis=1, keepdims=True)
@@ -172,6 +178,7 @@ def adam_optimizer_batch(X, Y, W1, W2, W3, conf):
 def crear_batches(X, Y, batch_size):
     for i in range(0, X.shape[0], batch_size):
         yield X[i:i + batch_size], Y[i:i + batch_size]
+
 # CResidual-Dispersion Entropy
 def  label_binary(Y, Y_pred):
     return -np.mean(np.sum(Y * np.log(Y_pred + 1e-8), axis=1))
@@ -179,7 +186,7 @@ def  label_binary(Y, Y_pred):
 # CResidual-Permutation Entropy
 def mtx_confusion():
     ...
-    return(entr)
+    return
 #
 
 #

@@ -71,8 +71,8 @@ def sae_elm(X, Y, conf):
         W1 = inicializar_pesos(X.shape[1], capa_oculta_1)
         H1 = sigmoid(X @ W1)  # Salida de la primera capa
 
-        # Paso 2: Inicializar pesos aleatorios para la segunda capa
-        W2 = inicializar_pesos(capa_oculta_1, capa_oculta_2)
+        # Paso 2: Ajustar pesos con la pseudo-inversa
+        W2 = calcular_pseudo_inversa(X.T, H1.T, C)
         H2 = sigmoid(H1 @ W2)  # Salida de la segunda capa
 
         # Paso 3: Ajustar pesos de salida con pseudo-inversa
@@ -126,7 +126,7 @@ def adam_optimizer_batch(X, Y, W1, W2, W3, conf):
     batch_size = conf[1].astype(int)
     learning_rate = conf[2]
     beta1, beta2 = 0.9, 0.999
-    epsilon = 1e-8
+    epsilon = 1e-6
 
     # Inicialización de V y S
     V1, S1 = np.zeros_like(W1), np.zeros_like(W1)
@@ -170,7 +170,7 @@ def adam_optimizer_batch(X, Y, W1, W2, W3, conf):
             costos.append(costo)
 
         # Mostrar progreso por época
-        print(f"Época {epoch + 1}/{max_epochs}, Costo: {np.mean(costos[-len(X) // batch_size:]):.4f}")
+        print(f"Época {epoch + 1}/{max_epochs}, Costo: {np.mean(costos[-len(X) // batch_size:]):f}")
 
     return W1, W2, W3, costos
 

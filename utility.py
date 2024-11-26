@@ -1,7 +1,7 @@
 
 # My Utility : auxiliars functions
 import numpy  as np
-
+import time
 # Cargar datos encoder
 def loadConfSae():
     conf=np.loadtxt('config_sae.csv').astype(int)
@@ -120,76 +120,111 @@ def forward_backward(X, Y, W1, W2, W3):
 
     return costo, dW1, dW2, dW3
 
-# Optimización con Adam por mini-batches
 def adam_optimizer_batch(X, Y, W1, W2, W3, conf):
+    inicio=time.time()
     max_epochs = conf[0].astype(int)
     batch_size = conf[1].astype(int)
     learning_rate = conf[2]
     beta1, beta2 = 0.9, 0.999
-    epsilon = 1e-6
+    epsilon = 1e-7
 
     # Inicialización de V y S
     V1, S1 = np.zeros_like(W1), np.zeros_like(W1)
     V2, S2 = np.zeros_like(W2), np.zeros_like(W2)
     V3, S3 = np.zeros_like(W3), np.zeros_like(W3)
-    costos = []
+    
+    promedio_costos=[]
+    # Contador de pasos global (para Adam)
+    step = 0
 
     for epoch in range(max_epochs):
+        costos = []
         # Paso 1: Reordenar aleatoriamente las muestras
         indices = np.random.permutation(X.shape[0])
         X = X[indices]
         Y = Y[indices]
-
         # Paso 2: Dividir en mini-batches
         for X_batch, Y_batch in crear_batches(X, Y, batch_size):
             # Forward y backward pass
             costo, dW1, dW2, dW3 = forward_backward(X_batch, Y_batch, W1, W2, W3)
 
+            # Incrementar el contador global de pasos
+            step += 1
+
             # Actualización de V y S para cada conjunto de pesos
             # Para W1
             V1 = beta1 * V1 + (1 - beta1) * dW1
             S1 = beta2 * S1 + (1 - beta2) * (dW1 ** 2)
-            V1_corr = V1 / (1 - beta1 ** (epoch + 1))
-            S1_corr = S1 / (1 - beta2 ** (epoch + 1))
+            V1_corr = V1 / (1 - beta1 ** step)
+            S1_corr = S1 / (1 - beta2 ** step)
             W1 -= learning_rate * V1_corr / (np.sqrt(S1_corr) + epsilon)
 
             # Para W2
             V2 = beta1 * V2 + (1 - beta1) * dW2
             S2 = beta2 * S2 + (1 - beta2) * (dW2 ** 2)
-            V2_corr = V2 / (1 - beta1 ** (epoch + 1))
-            S2_corr = S2 / (1 - beta2 ** (epoch + 1))
+            V2_corr = V2 / (1 - beta1 ** step)
+            S2_corr = S2 / (1 - beta2 ** step)
             W2 -= learning_rate * V2_corr / (np.sqrt(S2_corr) + epsilon)
 
             # Para W3
             V3 = beta1 * V3 + (1 - beta1) * dW3
             S3 = beta2 * S3 + (1 - beta2) * (dW3 ** 2)
-            V3_corr = V3 / (1 - beta1 ** (epoch + 1))
-            S3_corr = S3 / (1 - beta2 ** (epoch + 1))
+            V3_corr = V3 / (1 - beta1 ** step)
+            S3_corr = S3 / (1 - beta2 ** step)
             W3 -= learning_rate * V3_corr / (np.sqrt(S3_corr) + epsilon)
 
+            # Guardar el costo actual
             costos.append(costo)
 
         # Mostrar progreso por época
-        print(f"Época {epoch + 1}/{max_epochs}, Costo: {np.mean(costos[-len(X) // batch_size:]):f}")
-
-    return W1, W2, W3, costos
+        promedio_costo = np.mean(costos[-(len(X) // batch_size):])
+        promedio_costos.append(promedio_costo)
+        print(f"Época {epoch + 1}/{max_epochs}, Costo Promedio: {promedio_costo:f}")
+    print(f"Tiempo de ejecución: {time.time()-inicio:.2f} segundos")
+    return W1, W2, W3, promedio_costos
 
 # Función para crear mini-batches
 def crear_batches(X, Y, batch_size):
+    """
+    Divide los datos en mini-batches de tamaño batch_size.
+    """
     for i in range(0, X.shape[0], batch_size):
-        yield X[i:i + batch_size], Y[i:i + batch_size]
+        X_batch = X[i:i + batch_size]
+        Y_batch = Y[i:i + batch_size]
+        yield X_batch, Y_batch
 
 # CResidual-Dispersion Entropy
 def  label_binary(Y, Y_pred):
     return -np.mean(np.sum(Y * np.log(Y_pred + 1e-8), axis=1))
-#
-# CResidual-Permutation Entropy
-def mtx_confusion():
-    ...
-    return
-#
+#Calcular matriz de confusión
+def mtx_confusion(clases_reales, clases_predichas, num_clases):
+    # Inicializar matriz de confusión
+    matriz = np.zeros((num_clases, num_clases), dtype=int)
 
-#
+    # Llenar la matriz de confusión
+    for real, predicha in zip(clases_reales, clases_predichas):
+        matriz[np.argmax(real, axis=0), predicha] += 1
+
+    return matriz
+
+
+def calcular_metricas(matriz_confusion):
+    # Caclular TP, TN, FP, FN
+    TP = matriz_confusion[0, 0]
+    TN = matriz_confusion[1, 1]
+    FP = matriz_confusion[1, 0]
+    FN = matriz_confusion[0, 1]
+
+    # Cálculo para la clase (1):
+    precision_1 = TP / (TP + FP) if (TP + FP) > 0 else 0
+    recall_1 = TP / (TP + FN) if (TP + FN) > 0 else 0
+    f1_score_1 = 2 * (precision_1 * recall_1) / (precision_1 + recall_1) if (precision_1 + recall_1) > 0 else 0
+    # Cálculo para la clase (2):
+    precision_0 = TN / (TN + FN) if (TN + FN) > 0 else 0
+    recall_0 = TN / (TN + FP) if (TN + FP) > 0 else 0
+    f1_score_2 = 2 * (precision_0 * recall_0) / (precision_0 + recall_0) if (precision_0 + recall_0) > 0 else 0
+
+    return f1_score_1,f1_score_2
 
 #
 

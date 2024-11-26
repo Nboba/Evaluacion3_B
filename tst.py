@@ -11,30 +11,6 @@ def forward_edl(X, W1, W2, W3):
     Y_pred = np.exp(Z3) / np.sum(np.exp(Z3), axis=1, keepdims=True)  # Softmax
     return np.argmax(Y_pred, axis=1)  # Clase predicha
 
-def matriz_confusion_manual(clases_reales, clases_predichas, num_clases):
-    # Inicializar matriz de confusión
-    matriz = np.zeros((num_clases, num_clases), dtype=int)
-
-    # Llenar la matriz de confusión
-    for real, predicha in zip(clases_reales, clases_predichas):
-        matriz[np.argmax(real, axis=0), predicha] += 1
-
-    return matriz
-
-def calcular_metricas(matriz_confusion):
-    # Para dos clases, extraer TP, TN, FP, FN
-    TP = matriz_confusion[0, 0]
-    TN = matriz_confusion[1, 1]
-    FP = matriz_confusion[1, 0]
-    FN = matriz_confusion[0, 1]
-
-    # Calcular métricas
-    precision = TP / (TP + FP) if (TP + FP) > 0 else 0
-    recall = TP / (TP + FN) if (TP + FN) > 0 else 0
-    f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-    accuracy = (TP + TN) / (TP + TN + FP + FN)
-
-    return precision, recall, f1_score, accuracy
 
 def main():
         #Carga e Inicializacion de datos
@@ -45,20 +21,18 @@ def main():
         y_pred=forward_edl(X, W1, W2, W3)
 
         #Matriz de Confusion
-        matriz_confusion = matriz_confusion_manual(y, y_pred, 2)
-        print("Matriz de confusión:",matriz_confusion)
+        matriz_confusion = ut.mtx_confusion(y, y_pred, 2)
+        print(f"Matriz de confusión:\n{matriz_confusion}")
         
         #Metricas
-        precision, recall, f1_score, accuracy = calcular_metricas(matriz_confusion)
-        print("precision:",precision)
-        print("recall:",recall)
-        print("f1_score:",f1_score)
-        print("accuracy:",accuracy)
+        f1_score_1,f1_score_2 = ut.calcular_metricas(matriz_confusion)
+        print("f1_score clase 1:",f1_score_1)
+        print("f1_score clase 2:",f1_score_2)
 
         #Guardar archivos
         np.savetxt("confusion.csv", matriz_confusion, delimiter=",", fmt="%d", comments="")
         with open("fscores.csv", "w") as file:
-            file.write(f"Metric,Value\nprecision,{precision}\nrecall,{recall}\nf1_score,{f1_score}\naccuracy,{accuracy}\n")
+            file.write(f"{f1_score_1}\n{f1_score_2}\n")
         
               
 
